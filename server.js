@@ -470,7 +470,7 @@ app.get('/api/confirm/:token', async (req, res) => {
         const formattedPhone = formatNigerianPhone(shareholder.phone_number);
         if (formattedPhone && isValidNigerianPhone(formattedPhone)) {
           await twilioClient.messages.create({
-            body: `Hello ${shareholder.name}, your SAHCO AGM registration (ACNO: ${shareholder.acno}) is complete. Check your email for details.`,
+            body: `Hello ${shareholder.name}, your SAHCO AGM registration (ACNO: ${shareholder.acno}) is complete. A Zoom meeting link will be sent to you before the AGM.`,
             from: process.env.TWILIO_PHONE_NUMBER,
             to: formattedPhone
           });
