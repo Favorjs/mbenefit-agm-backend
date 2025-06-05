@@ -14,6 +14,27 @@ const twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
 
 
+// Add this phone number formatter function
+function formatNigerianPhone(phone) {
+  // Remove all non-digit characters
+  let cleaned = phone.replace(/\D/g, '');
+
+  // Convert local numbers (starts with 0)
+  if (cleaned.startsWith('0')) {
+    return `+234${cleaned.substring(1)}`;
+  }
+
+  // Convert already national numbers (without +234)
+  if (cleaned.startsWith('234') && cleaned.length === 13) {
+    return `+${cleaned}`;
+  }
+
+  // Return as-is if already international format
+  return phone;
+}
+
+
+
 // Sequelize setup
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'mysql',
@@ -233,7 +254,7 @@ app.post('/api/check-shareholder', async (req, res) => {
 // Send confirmation link via email
 app.post('/api/send-confirmation', async (req, res) => {
   const { acno, email, phone_number } = req.body;
-
+phone_number = formatNigerianPhone(phone_number);
 
   try {
 
@@ -309,6 +330,24 @@ if (email && email !== shareholder.email) {
 app.get('/api/confirm/:token', async (req, res) => {
   const { token } = req.params;
 
+  // Phone number formatting function
+  const formatNigerianPhone = (phone) => {
+    if (!phone) return null;
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+      return `+234${cleaned.substring(1)}`;
+    }
+    if (cleaned.startsWith('234') && cleaned.length === 13) {
+      return `+${cleaned}`;
+    }
+    return phone;
+  };
+
+  // Phone number validation function
+  const isValidNigerianPhone = (phone) => {
+    return phone && /^\+234[789]\d{9}$/.test(phone);
+  };
+
   try {
     const pending = await VerificationToken.findOne({ where: { token } });
 
@@ -316,13 +355,12 @@ app.get('/api/confirm/:token', async (req, res) => {
       return res.status(400).send('❌ Invalid or expired token.');
     }
 
-    // Fetch full shareholder details
     const shareholder = await Shareholder.findOne({ where: { acno: pending.acno } });
-
     if (!shareholder) {
       return res.status(404).send('❌ Shareholder not found.');
     }
 
+    // Create registered user
     await RegisteredUser.create({
       name: shareholder.name,
       acno: shareholder.acno,
@@ -330,16 +368,12 @@ app.get('/api/confirm/:token', async (req, res) => {
       phone_number: shareholder.phone_number,
       registered_at: new Date(),
       holdings: shareholder.holdings,
-      chn:shareholder.chn
+      chn: shareholder.chn
     });
 
     await pending.destroy();
 
-
-    // Add this endpoint to your existing server code
-
-
-    // Send follow-up email
+    // Send email
     await transporter.sendMail({
       from: '"E-Voting Portal" <your@email.com>',
       to: shareholder.email,
@@ -350,31 +384,48 @@ app.get('/api/confirm/:token', async (req, res) => {
         <p>✅ Your account is now active.</p>
         <h3>🗳️ Voting Instructions:</h3>
         <ul>
-          <li>You will recieve a zoom link on you mail to join the Annual General meeting </a></li>
-          <li>Login to zoom using only your registered email address: <strong>${shareholder.email}</strong>
-   
+          <li>You will receive a zoom link on your mail to join the Annual General meeting</li>
+          <li>Login to zoom using only your registered email address: <strong>${shareholder.email}</strong></li>
         </ul>
         <p>Thank you for participating!</p>
       `
     });
 
-
-      // Send success SMS if phone number exists
+    // Send SMS with proper phone number formatting
     if (shareholder.phone_number) {
       try {
+        const formattedPhone = formatNigerianPhone(shareholder.phone_number);
+        
+        if (!isValidNigerianPhone(formattedPhone)) {
+          console.warn(`Invalid Nigerian phone number: ${shareholder.phone_number}`);
+          throw new Error('Invalid phone number format');
+        }
+
         await twilioClient.messages.create({
           body: `Hello ${shareholder.name}, your SAHCO AGM registration is successful. You will receive Zoom details via email.`,
-          from: TWILIO_PHONE_NUMBER,
-          to: shareholder.phone_number
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: formattedPhone
         });
+        
+        console.log(`SMS sent successfully to ${formattedPhone}`);
       } catch (smsError) {
-        console.error('Failed to send success SMS:', smsError);
+        console.error('Failed to send success SMS:', {
+          error: smsError.message,
+          originalNumber: shareholder.phone_number,
+          formattedNumber: formattedPhone || 'N/A',
+          timestamp: new Date().toISOString()
+        });
       }
     }
 
-    res.redirect('https://agm-registration.apel.com.ng//registration-success');
+    res.redirect('https://agm-registration.apel.com.ng/registration-success');
   } catch (err) {
-    console.error(err);
+    console.error('Confirmation Error:', {
+      error: err.message,
+      stack: err.stack,
+      token: token,
+      timestamp: new Date().toISOString()
+    });
     res.status(500).send('Server error');
   }
 });
