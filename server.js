@@ -464,24 +464,7 @@ app.get('/api/confirm/:token', async (req, res) => {
       `
     });
 
-    let smsSuccess = false;
-    if (shareholder.phone_number) {
-      try {
-        const formattedPhone = formatNigerianPhone(shareholder.phone_number);
-        if (formattedPhone && isValidNigerianPhone(formattedPhone)) {
-          await twilioClient.messages.create({
-            body: `Hello ${shareholder.name}, your SAHCO AGM registration (ACNO: ${shareholder.acno}) is complete. A Zoom meeting link will be sent to you before the AGM.`,
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: formattedPhone
-          });
-          smsSuccess = true;
-        }
-      } catch (smsError) {
-        console.error('Confirmation SMS failed:', smsError.message);
-      }
-    }
-
-    await mailPromise; // Ensure email is sent before redirecting
+  // Ensure email is sent before redirecting
 
     // Custom success page with details
     res.send(`
