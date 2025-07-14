@@ -134,121 +134,124 @@ app.use((req, res, next) => {
  
 //Shareholder Model
 const Shareholder = sequelize.define('Shareholder', {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
-    },
-    acno: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    phoneNumber: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      field: 'phone_number'
-    },
-    shareholding: {
-      type: DataTypes.DECIMAL(15, 2),
-      allowNull: false,
-      field: 'holdings'
-    },
-    status: {
-      type: DataTypes.ENUM('pending', 'active', 'suspended'),
-      defaultValue: 'active'
-    },
-    address: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      validate: {
-        isEmail: true
-      }
-    },
-    chn: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    rin: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    hasVoted: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      allowNull: false,
-      field: 'has_voted'
+
+  acno: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  phone_number: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: false,
+  
+  },
+  holdings: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+
+  },
+ 
+  address: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      isEmail: true
     }
-  }, {
-    tableName: 'shareholders',
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: false,
-    freezeTableName: true
-  });
+  },
+  chn: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  rin: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
+}, {
+  tableName: 'shareholders',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: false,
+  freezeTableName: true
+});
+
 
 // Registered User Model
 
 
  const RegisteredHolders = sequelize.define('RegisteredHolders', {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    phoneNumber: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      field: 'phone_number'
-    },
-    shareholding: {
-      type: DataTypes.DECIMAL(15, 2),
-      allowNull: false
-    },
-    status: {
-      type: DataTypes.ENUM('pending', 'active', 'suspended'),
-      defaultValue: 'active'
-    },
-    acno: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      validate: {
-        isEmail: true
-      }
-    },
-    chn: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    registeredAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      field: 'registered_at'
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  phone_number: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  
+  },
+  shareholding: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false
+  },
+
+  acno: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      isEmail: true
     }
-  }, {
-    tableName: 'registeredholders',
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: false
-  });
+  },
+  chn: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  status: {
+    type: DataTypes.ENUM('pending', 'active', 'suspended'),
+    defaultValue: 'active'
+  },
+  hasVoted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+  },
+  status: {
+    type: DataTypes.ENUM('pending', 'active', 'suspended'),
+    defaultValue: 'active'
+  },
+  registeredAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    field: 'registered_at'
+  }
+}, {
+  tableName: 'registeredholders',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: false
+});
+
+
+
 
 // Verification Token Model
 const VerificationToken = sequelize.define('VerificationToken', {
@@ -262,7 +265,7 @@ const VerificationToken = sequelize.define('VerificationToken', {
   timestamps: false,
   freezeTableName: true
 });
-
+sequelize.sync({alter:true})
 // Nodemailer setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -276,104 +279,97 @@ const transporter = nodemailer.createTransport({
 
 
 
-// Updated check-shareholder route
 app.post('/api/check-shareholder', async (req, res) => {
   const { searchTerm } = req.body;
 
-  if (!searchTerm) {
-    return res.status(400).json({ error: 'Please provide a search term.' });
+  if (!searchTerm || typeof searchTerm !== 'string') {
+    return res.status(400).json({ error: 'Please provide a valid search term.' });
   }
 
-  try {
-    // Check if searchTerm is numeric (account number)
-    const isAccountNumber = /^\d+$/.test(searchTerm);
+  const cleanTerm = searchTerm.trim();
 
-    if (isAccountNumber) {
-      // Exact match for account numbers
+  try {
+    // Check for exact account number match first
+    if (/^\d+$/.test(cleanTerm)) {
       const shareholder = await Shareholder.findOne({ 
-        where: { acno: searchTerm  } 
+        where: { acno: cleanTerm } 
       });
 
       if (shareholder) {
         return res.json({
           status: 'account_match',
-          shareholder: {
-            name: shareholder.name,
-            acno: shareholder.acno,
-            email: shareholder.email,
-            phone_number: shareholder.phone_number,
-            chn:shareholder.chn
-          }
+          shareholder: formatShareholder(shareholder)
         });
       }
     }
-    const byChn = await Shareholder.findOne({ where: { chn: searchTerm } });
+
+    // Check for exact CHN match
+    const byChn = await Shareholder.findOne({ 
+      where: { 
+        chn: { [Op.iLike]: cleanTerm } // Case-insensitive match
+      } 
+    });
+
     if (byChn) {
       return res.json({
         status: 'chn_match',
-        shareholder: {
-          name: byChn.name,
-          acno: byChn.acno,
-          email: byChn.email,
-          phone_number: byChn.phone_number,
-          chn: byChn.chn
-        }
+        shareholder: formatShareholder(byChn)
       });
     }
 
-    // For names, do partial search (randomized)
-   const shareholders = await Shareholder.findAll({
-  where: {
-    [Op.or]: [
-      // Basic search
-      { name: { [Op.like]: `%${searchTerm}%` } },
-      
-      // Split search term into words and search for each component
-      ...searchTerm.split(/\s+/).filter(Boolean).map(word => ({
-        name: { [Op.like]: `%${word}%` }
-      })),
-      
-      // Soundex for phonetic matching (handles some misspellings)
-      sequelize.where(
-        sequelize.fn('SOUNDEX', sequelize.col('name')),
-        'LIKE',
-        `${sequelize.fn('SOUNDEX', searchTerm)}%`
-      ),
-      
-      // Levenshtein distance for typo tolerance (if extension is available)
-      ...(sequelize.dialect === 'mysql' ? [{
-        name: sequelize.where(
-          sequelize.fn('LEVENSHTEIN', 
-            sequelize.fn('LOWER', sequelize.col('name')),
-            sequelize.fn('LOWER', searchTerm)
+    // Advanced name search for PostgreSQL
+    const shareholders = await Shareholder.findAll({
+      where: {
+        [Op.or]: [
+          // Exact match (case-insensitive)
+          { name: { [Op.iLike]: cleanTerm } },
+          
+          // Starts with term
+          { name: { [Op.iLike]: `${cleanTerm}%` } },
+          
+          // Contains term
+          { name: { [Op.iLike]: `%${cleanTerm}%` } },
+          
+          // Split into words and search for each
+          ...cleanTerm.split(/\s+/).filter(Boolean).map(word => ({
+            name: { [Op.iLike]: `%${word}%` }
+          })),
+          
+          // Phonetic search using PostgreSQL's metaphone
+          sequelize.where(
+            sequelize.fn('metaphone', sequelize.col('name'), 4),
+            sequelize.fn('metaphone', cleanTerm, 4)
           ),
-          { [Op.lte]: 3 } // Allow small differences
-        )
-      }] : [])
-    ]
-  },
-  order: [
-    // Prioritize exact matches first
-    sequelize.literal(`CASE WHEN name LIKE '${searchTerm}' THEN 0 
-                        WHEN name LIKE '${searchTerm}%' THEN 1 
-                        WHEN name LIKE '%${searchTerm}%' THEN 2 
-                        ELSE 3 END`),
-    // Then sort by random for equally good matches
-    sequelize.random()
-  ],
-  limit: 10
-});
+          
+          // Trigram similarity for fuzzy matching
+          sequelize.where(
+            sequelize.fn('similarity', 
+              sequelize.fn('lower', sequelize.col('name')),
+              cleanTerm.toLowerCase()
+            ),
+            { [Op.gt]: 0.3 } // Adjust threshold as needed
+          )
+        ]
+      },
+      order: [
+        // Prioritize better matches first
+        [sequelize.literal(`
+          CASE 
+            WHEN name ILIKE '${cleanTerm}' THEN 0
+            WHEN name ILIKE '${cleanTerm}%' THEN 1
+            WHEN name ILIKE '%${cleanTerm}%' THEN 2
+            ELSE 3 + (1 - similarity(lower(name), '${cleanTerm.toLowerCase()}'))
+          END
+        `), 'ASC'],
+        [sequelize.col('name'), 'ASC'] // Secondary sort by name
+      ],
+      limit: 10
+    });
 
     if (shareholders.length > 0) {
       return res.json({
         status: 'name_matches',
-        shareholders: shareholders.map(sh => ({
-          name: sh.name,
-          acno: sh.acno,
-          email: sh.email,
-          phone_number: sh.phone_number,
-          chn: sh.chn
-        }))
+        shareholders: shareholders.map(formatShareholder)
       });
     }
 
@@ -383,11 +379,30 @@ app.post('/api/check-shareholder', async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error('Search error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
+
+
+
+// Helper function to format shareholder data
+function formatShareholder(shareholder) {
+  return {
+    name: shareholder.name,
+    acno: shareholder.acno,
+    email: shareholder.email,
+    phone_number: shareholder.phone_number,
+    chn: shareholder.chn,
+    // Include other relevant fields
+    holdings: shareholder.holdings,
+    address: shareholder.address
+  };
+}
 // Send confirmation link via email
 app.post('/api/send-confirmation', async (req, res) => {
   const { acno, email, phone_number } = req.body;
@@ -418,7 +433,7 @@ app.post('/api/send-confirmation', async (req, res) => {
 
   try {
     // Check if already registered
-    const alreadyRegistered = await RegisteredUser.findOne({ where: { acno } });
+    const alreadyRegistered = await RegisteredHolders.findOne({ where: { acno } });
     if (alreadyRegistered) {
       return res.status(400).json({ 
         message: '❌ This shareholder is already registered',
@@ -441,6 +456,12 @@ app.post('/api/send-confirmation', async (req, res) => {
       shareholder.email = email;
     }
 
+
+
+
+
+
+    
     // Generate verification token
     const token = uuidv4();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
@@ -452,8 +473,9 @@ app.post('/api/send-confirmation', async (req, res) => {
       phone_number: shareholder.phone_number, 
       expires_at: expiresAt 
     });
+    
 
-    const confirmUrl = `https://e-voting-backeknd-production.up.railway.app/api/confirm/${token}`;
+    const confirmUrl = `http://localhost:1000/api/confirm/${token}`;
 
     // Send confirmation email
     await transporter.sendMail({
@@ -570,14 +592,16 @@ app.get('/api/confirm/:token', async (req, res) => {
     }
 
     // Complete registration
-    await RegisteredUser.create({
+    await RegisteredHolders.create({
       name: shareholder.name,
       acno: shareholder.acno,
       email: shareholder.email,
       phone_number: shareholder.phone_number,
       registered_at: new Date(),
-      holdings: shareholder.holdings,
-      chn: shareholder.chn
+      shareholding: shareholder.holdings,
+      chn: shareholder.chn,
+      rin: shareholder.rin,
+      address: shareholder.address
     });
 
     await pending.destroy();
@@ -681,10 +705,10 @@ app.get('/api/registered-users', async (req, res) => {
     }
 
     // Get the total count for pagination info
-    const totalCount = await RegisteredUser.count({ where: whereConditions });
+    const totalCount = await RegisteredHolders.count({ where: whereConditions });
 
     // Get the paginated results
-    const users = await RegisteredUser.findAll({
+    const users = await RegisteredHolders.findAll({
       where: whereConditions,
       order: [[sortBy, sortOrder]],
       limit: pageSize,
