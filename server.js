@@ -35,11 +35,62 @@ function formatNigerianPhone(phone) {
 
 
 
+
+
+
 // Sequelize setup
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'mysql',
- 
-});
+
+let sequelize;
+
+if (process.env.NODE_ENV === 'production') {
+  // Online database (PostgreSQL with SSL for production)
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: 'postgres',
+    ssl: true,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
+    pool: {
+      max: 20,
+      min: 5,
+      acquire: 30000,
+      idle: 10000
+    },
+    logging: false
+  });
+} else {
+  // Local database (MySQL or PostgreSQL without SSL)
+  sequelize = new Sequelize(
+    process.env.DB_NAME || 'your_local_db_name',
+    process.env.DB_USER || 'your_local_db_user',
+    process.env.DB_PASSWORD || 'your_local_db_password',
+    {
+      host: process.env.DB_HOST || 'localhost',
+      dialect: process.env.DB_DIALECT || 'postgres', 
+      pool: {
+        max: 20,
+        min: 5,
+        acquire: 30000,
+        idle: 10000
+      },
+    // Enable logging for debugging in development
+    }
+  );
+}
+
+// Test the connection
+(async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Database connection established successfully.');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
+})();
+
 
 const allowedOrigins = [
   process.env.LOCAL_FRONTEND,
@@ -82,36 +133,122 @@ app.use((req, res, next) => {
 
  
 //Shareholder Model
-const Shareholder = sequelize.define('shareholders', {
-  acno: { type: DataTypes.STRING, allowNull: false, primaryKey: true },
-  name: DataTypes.STRING,
- 
-  address: DataTypes.STRING,
-  holdings: DataTypes.STRING,
-  phone_number: DataTypes.STRING,
-  email: DataTypes.STRING,
-  chn: { type:Sequelize.STRING, allowNull: true },
-  rin: DataTypes.STRING,
-  hasVoted: { type: Sequelize.BOOLEAN, defaultValue: false, allowNull: false }
-}, {
-  timestamps: false,
-  freezTableName: true
-});
+const Shareholder = sequelize.define('Shareholder', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    acno: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    phoneNumber: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      field: 'phone_number'
+    },
+    shareholding: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      field: 'holdings'
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'active', 'suspended'),
+      defaultValue: 'active'
+    },
+    address: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isEmail: true
+      }
+    },
+    chn: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    rin: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    hasVoted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+      field: 'has_voted'
+    }
+  }, {
+    tableName: 'shareholders',
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false,
+    freezeTableName: true
+  });
 
 // Registered User Model
-const RegisteredUser = sequelize.define('registeredusers', {
-  name: DataTypes.STRING,
-  acno: DataTypes.STRING,
-  holdings: DataTypes.STRING,
-  email: DataTypes.STRING,
-  phone_number: DataTypes.STRING,
- chn: { type:Sequelize.STRING, allowNull: true },
-  registered_at: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
-  },
-  
-});
+
+
+ const RegisteredHolders = sequelize.define('RegisteredHolders', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    phoneNumber: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      field: 'phone_number'
+    },
+    shareholding: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'active', 'suspended'),
+      defaultValue: 'active'
+    },
+    acno: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isEmail: true
+      }
+    },
+    chn: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    registeredAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      field: 'registered_at'
+    }
+  }, {
+    tableName: 'registeredholders',
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false
+  });
 
 // Verification Token Model
 const VerificationToken = sequelize.define('VerificationToken', {
@@ -342,7 +479,7 @@ app.post('/api/send-confirmation', async (req, res) => {
         
         if (formattedPhone && isValidNigerianPhone(formattedPhone)) {
           await twilioClient.messages.create({
-            body: `Hello ${shareholder.name}, confirm SAHCO AGM registration: ${confirmUrl}`,
+            body: `Hello ${shareholder.name}, confirm INTERNATIONAL BREWERIES PLC AGM registration: ${confirmUrl}`,
             from: process.env.TWILIO_PHONE_NUMBER,
             to: formattedPhone
           });
@@ -449,10 +586,10 @@ app.get('/api/confirm/:token', async (req, res) => {
     await transporter.sendMail({
       from: '"E-Voting Portal" <noreply@agm-registration.apel.com.ng>',
       to: shareholder.email,
-      subject: '✅ Registration Complete - SAHCO AGM',
+      subject: '✅ Registration Complete - INTERNATIONAL BREWERIES PLC AGM',
       html: `
         <h2>🎉 Hello ${shareholder.name},</h2>
-        <p>Your registration for the SAHCO Annual General Meeting is complete.</p>
+        <p>Your registration for the INTERNATIONAL BREWERIES PLC Annual General Meeting is complete.</p>
         <p><strong>ACNO:</strong> ${shareholder.acno}</p>
         <p><strong>Registered Email:</strong> ${shareholder.email}</p>
         <h3>Next Steps:</h3>
@@ -492,7 +629,7 @@ app.get('/api/confirm/:token', async (req, res) => {
         <div class="success">✅ Registration Successful</div>
         <div class="details">
           <h2>Hello ${shareholder.name}</h2>
-          <p>Your registration for the SAHCO AGM is complete.</p>
+          <p>Your registration for the INTERNATIONAL BREWERIES PLC AGM is complete.</p>
           <p><strong>ACNO:</strong> ${shareholder.acno}</p>
           <p><strong>Email:</strong> ${shareholder.email}</p>
           ${smsEligible ? `<p class="sms-notice">📱 SMS notifications are currently disabled</p>` : ''}
