@@ -276,6 +276,73 @@ const transporter = nodemailer.createTransport({
 });
 
 
+const GuestRegistration = sequelize.define('GuestRegistration', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      notEmpty: true
+    }
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      isEmail: true,
+      notEmpty: true
+    }
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      notEmpty: true
+    }
+  },
+  userType: {
+    type: DataTypes.ENUM('guest', 'regulator', 'press', 'observer'),
+    allowNull: false,
+    field: 'user_type'
+  },
+  registrationNumber: {
+    type: DataTypes.STRING,
+    unique: true,
+    field: 'registration_number'
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    field: 'created_at'
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    field: 'updated_at'
+  },
+  deletedAt: {
+    type: DataTypes.DATE,
+    field: 'deleted_at'
+  }
+}, {
+  tableName: 'guest_registrations',
+  paranoid: true, // Enable soft deletes
+  timestamps: true,
+  freezeTableName: true,
+  // hooks: {
+  //   beforeCreate: (guest) => {
+  //     // Generate registration number (example: GR-2023-0001)
+  //     const year = new Date().getFullYear();
+  //     return GuestRegistration.max('id').then(maxId => {
+  //       const nextId = (maxId || 0) + 1;
+  //       guest.registrationNumber = `GR-${year}-${String(nextId).padStart(4, '0')}`;
+  //     });
+  //   }
+  // }
+});
 
 
 
@@ -776,6 +843,42 @@ app.get('/api/registered-users', async (req, res) => {
     });
   }
 });
+
+
+
+
+app.post('/api/register-guest', (req, res) => {
+  const { name, email, phone, userCategory } = req.body;
+  
+  // Basic validation
+  if (!name || !email || !phone || !userCategory) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  
+  // Add to in-memory storage
+  const newGuest = {
+    id: Date.now(),
+    name,
+    email,
+    phone,
+    userCategory,
+    registeredAt: new Date().toISOString()
+  };
+  
+  GuestRegistration.create(newGuest);
+  
+  res.status(201).json({
+    success: true,
+    guest: newGuest
+  });
+});
+
+app.get('/api/guest-registrations', (req, res) => {
+  GuestRegistration.findAll().then(guests => {
+    res.json(guests);
+  }); 
+});
+
 // Start server
 const PORT = process.env.PORT;
 sequelize.sync().then(() => {
