@@ -310,11 +310,7 @@ const GuestRegistration = sequelize.define('GuestRegistration', {
     allowNull: false,
     field: 'user_type'
   },
-  registrationNumber: {
-    type: DataTypes.STRING,
-    unique: true,
-    field: 'registration_number'
-  },
+
   createdAt: {
     type: DataTypes.DATE,
     field: 'created_at'
@@ -848,20 +844,19 @@ app.get('/api/registered-users', async (req, res) => {
 
 
 app.post('/api/register-guest', (req, res) => {
-  const { name, email, phone, userCategory } = req.body;
+  const { name, email, phone, userType } = req.body;
   
   // Basic validation
-  if (!name || !email || !phone || !userCategory) {
-    return res.status(400).json({ error: 'All fields are required' });
+  if (!name || !email || !phone || !userType) {
+    return res.status(400).json({ success: false, error: 'All fields are required' });
   }
   
   // Add to in-memory storage
   const newGuest = {
-    id: Date.now(),
     name,
     email,
     phone,
-    userCategory,
+    userType,
     registeredAt: new Date().toISOString()
   };
   
