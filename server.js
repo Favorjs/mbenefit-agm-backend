@@ -749,7 +749,7 @@ app.get('/api/registered-users', async (req, res) => {
       order: [[sortBy, sortOrder]],
       limit: pageSize,
       offset: offset,
-      attributes: ['name', 'acno', 'email', 'phone_number', 'holdings','chn', 'registered_at'] // Select specific fields
+      attributes: ['name', 'acno', 'email', 'phone_number', 'shareholding','chn', 'registered_at'] // Select specific fields
     });
 
     // Calculate pagination metadata
