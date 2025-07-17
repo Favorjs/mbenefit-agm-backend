@@ -201,7 +201,7 @@ const Shareholder = sequelize.define('Shareholder', {
   },
   phone_number: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true,
   
   },
@@ -449,7 +449,7 @@ app.post('/api/send-confirmation', async (req, res) => {
         details: { acno }
       });
     }
-
+1
     // Update email if provided and different
     if (email && email !== shareholder.email) {
       await Shareholder.update({ email }, { where: { acno } });
@@ -458,8 +458,42 @@ app.post('/api/send-confirmation', async (req, res) => {
 
 
 
+ // Update phone number if provided and different
+ if (phone_number && phone_number !== shareholder.phone_number) {
+  const formattedPhone = formatNigerianPhone(phone_number);
+  if (formattedPhone && isValidNigerianPhone(formattedPhone)) {
+    await Shareholder.update({ phone_number: formattedPhone }, { where: { acno } });
+    shareholder.phone_number = formattedPhone;
+  } else {
+    return res.status(400).json({
+      message: '❌ Invalid phone number format',
+      details: { phone_number }
+    });
+  }
+}
 
+ // Update phone number if provided
+ let finalPhoneNumber = shareholder.phone_number;
+ if (phone_number) {
+   const formattedPhone = formatNigerianPhone(phone_number);
+   if (formattedPhone && isValidNigerianPhone(formattedPhone)) {
+     await Shareholder.update({ phone_number: formattedPhone }, { where: { acno } });
+     finalPhoneNumber = formattedPhone;
+   } else {
+     return res.status(400).json({
+       message: '❌ Invalid phone number format',
+       details: { phone_number }
+     });
+   }
+ }
 
+ // Ensure we have at least one contact method
+ if (!shareholder.email && !email && !finalPhoneNumber) {
+   return res.status(400).json({
+     message: '❌ Either email or phone number is required',
+     details: { acno }
+   });
+ }
 
     
     // Generate verification token
@@ -469,11 +503,11 @@ app.post('/api/send-confirmation', async (req, res) => {
     await VerificationToken.create({ 
       acno, 
       token, 
-      email: shareholder.email, 
-      phone_number: shareholder.phone_number, 
+      email: email || shareholder.email, 
+      phone_number: finalPhoneNumber,
       expires_at: expiresAt 
     });
-    
+
 
     const confirmUrl = `https://e-voting-backeknd-production-077c.up.railway.app/api/confirm/${token}`;
 
@@ -596,13 +630,15 @@ app.get('/api/confirm/:token', async (req, res) => {
       name: shareholder.name,
       acno: shareholder.acno,
       email: shareholder.email,
-      phone_number: shareholder.phone_number,
+      phone_number: shareholder.phone_number || pending.phone_number, 
       registered_at: new Date(),
       shareholding: shareholder.holdings,
       chn: shareholder.chn,
       rin: shareholder.rin,
       address: shareholder.address
     });
+
+    
 
     await pending.destroy();
 
