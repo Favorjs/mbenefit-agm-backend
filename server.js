@@ -842,20 +842,22 @@ app.get('/api/confirm/:token', async (req, res) => {
 
 app.get('/api/registered-users', async (req, res) => {
   try {
-    // Common parameters
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    const sortBy = req.query.sortBy || 'registered_at';
+    let sortBy = req.query.sortBy || (req.query.userType === 'guests' ? 'createdAt' : 'registered_at');
     const sortOrder = req.query.sortOrder || 'DESC';
     const searchTerm = req.query.search || '';
-    const userType = req.query.userType || 'shareholders'; // New parameter
+    const userType = req.query.userType || 'shareholders';
 
-    // Determine which model to use
     const model = userType === 'shareholders' ? RegisteredHolders : GuestRegistrations;
-    const dateField = userType === 'shareholders' ? 'registered_at' : 'createdAt';
+    
+    // Map sortBy to correct column names
+    if (userType === 'shareholders') {
+      if (sortBy === 'createdAt') sortBy = 'registered_at';
+      if (sortBy === 'phone') sortBy = 'phone_number';
+    }
 
-    // Build dynamic search conditions
     const whereConditions = {};
     if (searchTerm) {
       whereConditions[Op.or] = userType === 'shareholders' 
@@ -875,7 +877,6 @@ app.get('/api/registered-users', async (req, res) => {
           ];
     }
 
-    // Get total count and paginated results
     const totalCount = await model.count({ where: whereConditions });
     const results = await model.findAll({
       where: whereConditions,
@@ -887,48 +888,22 @@ app.get('/api/registered-users', async (req, res) => {
         : ['name', 'email', 'phone', 'userType', 'registrationNumber', 'createdAt']
     });
 
-    // Format response data consistently
-    const data = results.map(item => {
-      if (userType === 'shareholders') {
-        return {
-          name: item.name,
-          acno: item.acno,
-          email: item.email,
-          phone_number: item.phone_number,
-          shareholding: item.shareholding,
-          chn: item.chn,
-          registered_at: item.registered_at
-        };
-      } else {
-        return {
-          name: item.name,
-          email: item.email,
-          phone: item.phone,
-          userType: item.userType,
-          registrationNumber: item.registrationNumber,
-          createdAt: item.createdAt
-        };
-      }
-    });
-
     res.json({
       success: true,
-      data: data,
+      data: results,
       pagination: {
         totalItems: totalCount,
         totalPages: Math.ceil(totalCount / pageSize),
         currentPage: page,
-        pageSize: pageSize,
-        hasNextPage: page < Math.ceil(totalCount / pageSize),
-        hasPreviousPage: page > 1
+        pageSize: pageSize
       }
     });
 
   } catch (error) {
-    console.error('Error fetching registered users:', error);
+    console.error('Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch registered users',
+      message: 'Database error',
       error: error.message
     });
   }
