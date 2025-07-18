@@ -850,7 +850,7 @@ app.get('/api/registered-users', async (req, res) => {
     const searchTerm = req.query.search || '';
     const userType = req.query.userType || 'shareholders';
 
-    const model = userType === 'shareholders' ? RegisteredHolders : GuestRegistrations;
+    const model = userType === 'shareholders' ? RegisteredHolders : GuestRegistration;
     
     // Map sortBy to correct column names
     if (userType === 'shareholders') {
