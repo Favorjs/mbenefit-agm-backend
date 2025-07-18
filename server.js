@@ -329,6 +329,14 @@ const GuestRegistration = sequelize.define('GuestRegistration', {
   timestamps: true,
   freezeTableName: true,
   // hooks: {
+});
+
+// Alias for backward compatibility with older route logic
+const RegisteredGuests = GuestRegistration;
+
+// ---------------- Existing Hooks or Other Code ----------------
+
+// hooks: {
   //   beforeCreate: (guest) => {
   //     // Generate registration number (example: GR-2023-0001)
   //     const year = new Date().getFullYear();
@@ -338,8 +346,6 @@ const GuestRegistration = sequelize.define('GuestRegistration', {
   //     });
   //   }
   // }
-});
-
 
 
 app.post('/api/check-shareholder', async (req, res) => {
@@ -785,7 +791,8 @@ app.get('/api/registered-users', async (req, res) => {
     const offset = (page - 1) * pageSize;
 
     // Sorting parameters
-    const sortBy = req.query.sortBy || 'registered_at'; // Default sort by registration date
+    let sortBy = req.query.sortBy || 'registered_at'; // Default sort by registration date
+    if (sortBy === 'createdAt') sortBy = 'registered_at';
     const sortOrder = req.query.sortOrder || 'DESC'; // Default descending order
 
     // Search filter
