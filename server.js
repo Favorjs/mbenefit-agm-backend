@@ -934,17 +934,16 @@ app.post('/api/register-guest', (req, res) => {
     guest: newGuest
   });
 });
-
 app.get('/api/registered-guests', async (req, res) => {
   try {
     // Pagination parameters
-    const page = parseInt(req.query.page) || 1; // Default to page 1
-    const pageSize = parseInt(req.query.pageSize) || 10; // Default to 10 items per page
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
 
-    // Sorting parameters
-    const sortBy = req.query.sortBy || 'registered_at'; // Default sort by registration date
-    const sortOrder = req.query.sortOrder || 'DESC'; // Default descending order
+    // Sorting parameters - use 'created_at' instead of 'createdAt'
+    const sortBy = req.query.sortBy || 'created_at'; // Changed to match your actual column name
+    const sortOrder = req.query.sortOrder || 'DESC';
 
     // Search filter
     const searchTerm = req.query.search || '';
@@ -969,7 +968,7 @@ app.get('/api/registered-guests', async (req, res) => {
       order: [[sortBy, sortOrder]],
       limit: pageSize,
       offset: offset,
-      attributes: ['name', 'email', 'phone', 'userType', 'registered_at'] // Select specific fields
+      attributes: ['name', 'email', 'phone', 'userType', 'created_at'] // Make sure this matches your column name
     });
 
     // Calculate pagination metadata
@@ -996,7 +995,6 @@ app.get('/api/registered-guests', async (req, res) => {
     });
   }
 });
-
 // Start server
 const PORT = process.env.PORT;
 sequelize.sync().then(() => {
