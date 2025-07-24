@@ -98,6 +98,11 @@ const allowedOrigins = [
   process.env.LIVE_FRONTEND2 // Add your new domain here
 ].filter(Boolean);
 
+
+
+
+
+
 const corsOptions = {
   origin: function (origin, callback) {
     // allow requests with no origin (like curl, mobile apps)
@@ -649,7 +654,7 @@ app.post('/api/send-confirmation', async (req, res) => {
     });
 
 
-    const confirmUrl = `https://e-voting-backeknd-production.up.railway.app/api/confirm/${token}`;
+    const confirmUrl = `https://e-voting-backeknd-production-077c.up.railway.app/api/confirm/${token}`;
 
     // Send confirmation email
     await transporter.sendMail({
