@@ -320,7 +320,7 @@ async function migrateExistingHolders() {
 }
 
 // Uncomment to run migration
-migrateExistingHolders();
+// migrateExistingHolders();
 
 
 
