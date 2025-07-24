@@ -316,7 +316,7 @@ async function migrateExistingHolders() {
   for (const holder of holders) {
     await syncHolderToUser(holder);
   }
-  console.log('Migration completed');
+  console.log('Migration completed ss');
 }
 
 // Uncomment to run migration
