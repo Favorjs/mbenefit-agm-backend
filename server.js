@@ -187,6 +187,27 @@ const Shareholder = sequelize.define('Shareholder', {
 
 
 // Registered User Model
+const RegisteredUser = sequelize.define('registeredusers', {
+
+  name: DataTypes.STRING,
+  acno: DataTypes.STRING,
+  holdings: {
+    type: DataTypes.DECIMAL(15, 2),
+    defaultValue: 0 // Add this
+  },
+  chn: { type:Sequelize.STRING, allowNull: true },
+  email: DataTypes.STRING,
+  phone_number: DataTypes.STRING,
+  registered_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  sessionId: DataTypes.STRING, 
+  
+});
+
+
+  
 
 
  const RegisteredHolders = sequelize.define('RegisteredHolders', {
@@ -247,9 +268,59 @@ const Shareholder = sequelize.define('Shareholder', {
   tableName: 'registeredholders',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: false
+  updatedAt: false,
+  hooks: {
+    afterCreate: async (holder, options) => {
+      await syncHolderToUser(holder);
+    },
+    afterUpdate: async (holder, options) => {
+      await syncHolderToUser(holder);
+    }
+  }
 });
 
+// Helper function to sync data
+async function syncHolderToUser(holder) {
+  try {
+    const userData = {
+      name: holder.name,
+      acno: holder.acno,
+      holdings: holder.shareholding,
+      chn: holder.chn,
+      email: holder.email,
+      phone_number: holder.phone_number,
+      registered_at: holder.registeredAt,
+      
+    };
+
+
+ // Find or create the user
+ const [user, created] = await RegisteredUser.upsert({
+  acno: holder.acno,  // Using acno as the unique identifier
+  ...userData
+}, {
+  returning: true
+});
+
+console.log(created ? 'Created new user' : 'Updated existing user', user.acno);
+} catch (error) {
+console.error('Error syncing holder to user:', error);
+}
+}
+
+
+
+
+async function migrateExistingHolders() {
+  const holders = await RegisteredHolders.findAll();
+  for (const holder of holders) {
+    await syncHolderToUser(holder);
+  }
+  console.log('Migration completed');
+}
+
+// Uncomment to run migration
+migrateExistingHolders();
 
 
 
@@ -578,7 +649,7 @@ app.post('/api/send-confirmation', async (req, res) => {
     });
 
 
-    const confirmUrl = `https://e-voting-backeknd-production-077c.up.railway.app/api/confirm/${token}`;
+    const confirmUrl = `https://e-voting-backeknd-production.up.railway.app/api/confirm/${token}`;
 
     // Send confirmation email
     await transporter.sendMail({
@@ -604,7 +675,7 @@ app.post('/api/send-confirmation', async (req, res) => {
         
         if (formattedPhone && isValidNigerianPhone(formattedPhone)) {
           await twilioClient.messages.create({
-            body: `Hello ${shareholder.name}, confirm INTERNATIONAL BREWERIES PLC AGM registration: ${confirmUrl}`,
+            body: `Hello ${shareholder.name}, confirm MUTUAL BENEFITS ASSURANCE PLC AGM registration: ${confirmUrl}`,
             from: process.env.TWILIO_PHONE_NUMBER,
             to: formattedPhone
           });
@@ -715,10 +786,10 @@ app.get('/api/confirm/:token', async (req, res) => {
     await transporter.sendMail({
       from: '"E-Voting Portal" <noreply@agm-registration.apel.com.ng>',
       to: shareholder.email,
-      subject: '✅ Registration Complete - INTERNATIONAL BREWERIES PLC AGM',
+      subject: '✅ Registration Complete - MUTUAL BENEFITS ASSURANCE PLC AGM',
       html: `
         <h2>🎉 Hello ${shareholder.name},</h2>
-        <p>Your registration for the INTERNATIONAL BREWERIES PLC Annual General Meeting is complete.</p>
+        <p>Your registration for the MUTUAL BENEFITS ASSURANCE PLC Annual General Meeting is complete.</p>
         <p><strong>ACNO:</strong> ${shareholder.acno}</p>
         <p><strong>Registered Email:</strong> ${shareholder.email}</p>
         <h3>Next Steps:</h3>
@@ -758,7 +829,7 @@ app.get('/api/confirm/:token', async (req, res) => {
         <div class="success">✅ Registration Successful</div>
         <div class="details">
           <h2>Hello ${shareholder.name}</h2>
-          <p>Your registration for the INTERNATIONAL BREWERIES PLC AGM is complete.</p>
+          <p>Your registration for the MUTUAL BENEFITS ASSURANCE PLC AGM is complete.</p>
           <p><strong>ACNO:</strong> ${shareholder.acno}</p>
           <p><strong>Email:</strong> ${shareholder.email}</p>
           ${smsEligible ? `<p class="sms-notice">📱 SMS notifications are currently disabled</p>` : ''}
