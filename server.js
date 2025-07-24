@@ -336,7 +336,7 @@ const VerificationToken = sequelize.define('VerificationToken', {
   timestamps: false,
   freezeTableName: true
 });
-sequelize.sync({alter:true})
+sequelize.sync()
 // Nodemailer setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
