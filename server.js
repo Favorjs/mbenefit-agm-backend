@@ -654,7 +654,7 @@ app.post('/api/send-confirmation', async (req, res) => {
     });
 
 
-    const confirmUrl = `https://e-voting-backeknd-production.up.railway.app/api/confirm/${token}`;
+    const confirmUrl = `https://api.mbenefit.apel.com.ng/api/confirm/${token}`;
 
     // Send confirmation email
     await transporter.sendMail({
