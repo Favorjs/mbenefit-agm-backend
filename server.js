@@ -382,7 +382,7 @@ const GuestRegistration = sequelize.define('GuestRegistration', {
     }
   },
   userType: {
-    type: DataTypes.ENUM('guest', 'regulator', 'press', 'observer'),
+    type: DataTypes.ENUM('guest', 'regulator', 'press', 'observer', 'regulator'),
     allowNull: false,
     field: 'user_type'
   },
