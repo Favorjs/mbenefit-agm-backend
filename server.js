@@ -382,7 +382,7 @@ const GuestRegistration = sequelize.define('GuestRegistration', {
     }
   },
   userType: {
-    type: DataTypes.ENUM('guest', 'regulator', 'press', 'observer', 'auditor'),
+    type: DataTypes.ENUM('observer', 'regulator', 'external-auditor'),
     allowNull: false,
     field: 'user_type'
   },
@@ -654,7 +654,7 @@ app.post('/api/send-confirmation', async (req, res) => {
     });
 
 
-    const confirmUrl = `https://api.mbenefit.apel.com.ng/api/confirm/${token}`;
+    const confirmUrl = `https://api.redstar.apel.com.ng/api/confirm/${token}`;
 
     // Send confirmation email
     await transporter.sendMail({
@@ -680,7 +680,7 @@ app.post('/api/send-confirmation', async (req, res) => {
         
         if (formattedPhone && isValidNigerianPhone(formattedPhone)) {
           await twilioClient.messages.create({
-            body: `Hello ${shareholder.name}, confirm MUTUAL BENEFITS ASSURANCE PLC AGM registration: ${confirmUrl}`,
+            body: `Hello ${shareholder.name}, confirm RED STAR EXPRESS PLC AGM registration: ${confirmUrl}`,
             from: process.env.TWILIO_PHONE_NUMBER,
             to: formattedPhone
           });
@@ -788,18 +788,22 @@ app.get('/api/confirm/:token', async (req, res) => {
     await pending.destroy();
 
     // Send success email
+    const zoomLink=`https://us06web.zoom.us/j/86362037837?pwd=6qOUsZP7j11Vf0phxkxNivpfyGt2zg.1`
     await transporter.sendMail({
       from: '"E-Voting Portal" <noreply@agm-registration.apel.com.ng>',
       to: shareholder.email,
-      subject: '✅ Registration Complete - MUTUAL BENEFITS ASSURANCE PLC AGM',
+      subject: '✅ Registration Complete - RED STAR EXPRESS PLC AGM',
       html: `
         <h2>🎉 Hello ${shareholder.name},</h2>
-        <p>Your registration for the MUTUAL BENEFITS ASSURANCE PLC Annual General Meeting is complete.</p>
+        <p>Your registration for the RED STAR EXPRESS PLC Annual General Meeting is complete.</p>
         <p><strong>ACNO:</strong> ${shareholder.acno}</p>
         <p><strong>Registered Email:</strong> ${shareholder.email}</p>
         <h3>Next Steps:</h3>
         <ul>
-          <li>You will receive Zoom meeting details 24 hours before the AGM</li>
+          <li>Kindly click below for the zoom link for the upcoming meeting</li>
+           <a href="${zoomLink}" style="background-color:#1075bf;padding:12px 20px;color:#fff;text-decoration:none;border-radius:5px;">
+          ✅ Zoom Link
+        </a>
           <li>Login using your registered email: <strong>${shareholder.email}</strong></li>
         </ul>
         <p>Thank you for participating!</p>
@@ -834,7 +838,7 @@ app.get('/api/confirm/:token', async (req, res) => {
         <div class="success">✅ Registration Successful</div>
         <div class="details">
           <h2>Hello ${shareholder.name}</h2>
-          <p>Your registration for the MUTUAL BENEFITS ASSURANCE PLC AGM is complete.</p>
+          <p>Your registration for the RED STAR EXPRESS PLC AGM is complete.</p>
           <p><strong>ACNO:</strong> ${shareholder.acno}</p>
           <p><strong>Email:</strong> ${shareholder.email}</p>
           ${smsEligible ? `<p class="sms-notice">📱 SMS notifications are currently disabled</p>` : ''}
