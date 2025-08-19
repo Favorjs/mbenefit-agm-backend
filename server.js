@@ -788,27 +788,49 @@ app.get('/api/confirm/:token', async (req, res) => {
     await pending.destroy();
 
     // Send success email
-    const zoomLink=`https://us06web.zoom.us/j/86362037837?pwd=6qOUsZP7j11Vf0phxkxNivpfyGt2zg.1`
-    await transporter.sendMail({
-      from: '"E-Voting Portal" <noreply@agm-registration.apel.com.ng>',
-      to: shareholder.email,
-      subject: '✅ Registration Complete - RED STAR EXPRESS PLC AGM',
-      html: `
-        <h2>🎉 Hello ${shareholder.name},</h2>
-        <p>Your registration for the RED STAR EXPRESS PLC Annual General Meeting is complete.</p>
-        <p><strong>ACNO:</strong> ${shareholder.acno}</p>
-        <p><strong>Registered Email:</strong> ${shareholder.email}</p>
-        <h3>Next Steps:</h3>
-        <ul>
-          <li>Kindly click below for the zoom link for the upcoming meeting</li>
-           <a href="${zoomLink}" style="background-color:#1075bf;padding:12px 20px;color:#fff;text-decoration:none;border-radius:5px;">
-          ✅ Zoom Link
+   const zoomLink = `https://us06web.zoom.us/j/86362037837?pwd=6qOUsZP7j11Vf0phxkxNivpfyGt2zg.1`;
+
+await transporter.sendMail({
+  from: '"E-Voting Portal" <noreply@agm-registration.apel.com.ng>',
+  to: shareholder.email,
+  subject: '✅ Registration Complete - RED STAR EXPRESS PLC AGM',
+  html: `
+  <body style="font-family: Arial, sans-serif; background-color: #f6f9fc; padding: 20px; color: #333;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+      
+      <h2 style="color:#1075bf; text-align: center;">🎉 Hello ${shareholder.name},</h2>
+      
+      <p style="font-size: 15px; line-height: 1.6;">
+        Your registration for the <strong>RED STAR EXPRESS PLC Annual General Meeting</strong> is now complete.
+      </p>
+
+      <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p><strong>📌 ACNO:</strong> ${shareholder.acno}</p>
+        <p><strong>📧 Registered Email:</strong> ${shareholder.email}</p>
+      </div>
+
+      <h3 style="color:#1075bf;">Next Steps:</h3>
+      <p style="font-size: 15px;">Kindly use the link below to join the upcoming meeting:</p>
+
+      <div style="text-align: center; margin: 20px 0;">
+        <a href="${zoomLink}" style="background-color:#1075bf; padding:12px 25px; color:#fff; text-decoration:none; font-weight:bold; border-radius:6px; display:inline-block;">
+          ✅ Join Zoom Meeting
         </a>
-          <li>Login using your registered email: <strong>${shareholder.email}</strong></li>
-        </ul>
-        <p>Thank you for participating!</p>
-      `
-    });
+      </div>
+
+      <p style="font-size: 14px; line-height: 1.6;">
+        Please login using your registered email: 
+        <strong>${shareholder.email}</strong>
+      </p>
+
+      <p style="margin-top: 30px; font-size: 14px; text-align: center; color: #666;">
+        Thank you for participating! <br>
+        <em>— RED STAR EXPRESS PLC Team</em>
+      </p>
+    </div>
+  </body>
+  `
+});
 
     // Check if SMS would have been sent (but don't actually send)
     let smsEligible = false;
