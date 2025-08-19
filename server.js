@@ -788,12 +788,16 @@ app.get('/api/confirm/:token', async (req, res) => {
     await pending.destroy();
 
     // Send success email
-   const zoomLink = `https://us06web.zoom.us/j/86362037837?pwd=6qOUsZP7j11Vf0phxkxNivpfyGt2zg.1`;
+
+
+
+
+    const zoomLink = `https://us06web.zoom.us/j/86362037837?pwd=6qOUsZP7j11Vf0phxkxNivpfyGt2zg.1`;
 
 await transporter.sendMail({
   from: '"E-Voting Portal" <noreply@agm-registration.apel.com.ng>',
   to: shareholder.email,
-  subject: '✅ Registration Complete - RED STAR EXPRESS PLC AGM',
+  subject: '✅ Registration Complete - RED STAR EXPRESS PLC 32ND AGM',
   html: `
   <body style="font-family: Arial, sans-serif; background-color: #f6f9fc; padding: 20px; color: #333;">
     <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
@@ -801,13 +805,21 @@ await transporter.sendMail({
       <h2 style="color:#1075bf; text-align: center;">🎉 Hello ${shareholder.name},</h2>
       
       <p style="font-size: 15px; line-height: 1.6;">
-        Your registration for the <strong>RED STAR EXPRESS PLC Annual General Meeting</strong> is now complete.
+        Your registration for the <strong>RED STAR EXPRESS PLC 32ND Annual General Meeting</strong> is now complete.
       </p>
 
       <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
         <p><strong>📌 ACNO:</strong> ${shareholder.acno}</p>
         <p><strong>📧 Registered Email:</strong> ${shareholder.email}</p>
       </div>
+
+      <h3 style="color:#1075bf;">📅 Meeting Schedule</h3>
+      <p style="font-size: 15px; margin: 5px 0;">
+        <strong>Date:</strong> Thursday, 18th September 2025
+      </p>
+      <p style="font-size: 15px; margin: 5px 0;">
+        <strong>Time:</strong> 11:00 AM
+      </p>
 
       <h3 style="color:#1075bf;">Next Steps:</h3>
       <p style="font-size: 15px;">Kindly use the link below to join the upcoming meeting:</p>
@@ -825,7 +837,6 @@ await transporter.sendMail({
 
       <p style="margin-top: 30px; font-size: 14px; text-align: center; color: #666;">
         Thank you for participating! <br>
-        <em>— RED STAR EXPRESS PLC Team</em>
       </p>
     </div>
   </body>
